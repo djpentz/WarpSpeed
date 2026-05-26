@@ -4,6 +4,20 @@ A tiny macOS menu bar utility that warps your mouse cursor to any display, insta
 
 If you run two or three displays and spend half your day jiggling the mouse to find the pointer, this is for you. Press a hotkey, your cursor lands in the middle of the target screen — accompanied by a brief streak effect so you know exactly where it went.
 
+## Download
+
+Grab the latest build from the [**Releases** page](https://github.com/djpentz/WarpSpeed/releases/latest). Unzip `WarpSpeed.app.zip` and drag `WarpSpeed.app` into `/Applications`.
+
+The binary is **ad-hoc signed, not notarized**, so Gatekeeper will block it on first launch. Clear the quarantine flag once and you're done:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/WarpSpeed.app
+```
+
+Alternatively, right-click the app in Finder and choose **Open** the first time — macOS will then let you confirm and launch it.
+
+> Proper Developer ID signing + notarization (so no workaround is needed) is future work.
+
 ## Features
 
 - **Direct jump:** `⌃⌥1` / `⌃⌥2` / `⌃⌥3` — warp to display 1, 2, or 3 (left-to-right).
