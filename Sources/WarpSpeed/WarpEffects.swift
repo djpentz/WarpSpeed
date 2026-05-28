@@ -11,18 +11,27 @@ private func pseudoRandom(seed: Int) -> Double {
 private func easeOutCubic(_ t: Double) -> Double { 1 - pow(1 - t, 3) }
 private func easeOutQuad(_ t: Double)  -> Double { 1 - pow(1 - t, 2) }
 
+/// Captures the *first* frame's timestamp instead of the struct-init time, so
+/// effects always play their full duration even when the rendering pipeline is
+/// cold (e.g. immediately after the display wakes from sleep). Class so the
+/// mutation inside the render closure doesn't invalidate the view.
+final class EffectClock {
+    var start: Date?
+}
+
 // MARK: - 1. Warp Streaks (existing)
 
 struct WarpStreaksEffect: View {
     let token: UUID
-    @State private var startTime: Date = .now
+    @State private var clock = EffectClock()
     private let duration: Double = WarpEffect.streaks.duration
     private let streakCount: Int = 36
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: false)) { ctx in
             Canvas { context, size in
-                let elapsed = ctx.date.timeIntervalSince(startTime)
+                let start = clock.start ?? { clock.start = ctx.date; return ctx.date }()
+                let elapsed = ctx.date.timeIntervalSince(start)
                 let progress = min(max(elapsed / duration, 0), 1)
                 if progress >= 1 { return }
 
@@ -79,14 +88,15 @@ struct WarpStreaksEffect: View {
 
 struct SonarPingEffect: View {
     let token: UUID
-    @State private var startTime: Date = .now
+    @State private var clock = EffectClock()
     private let duration: Double = WarpEffect.sonar.duration
     private let ringCount: Int = 4
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: false)) { ctx in
             Canvas { context, size in
-                let elapsed = ctx.date.timeIntervalSince(startTime)
+                let start = clock.start ?? { clock.start = ctx.date; return ctx.date }()
+                let elapsed = ctx.date.timeIntervalSince(start)
                 let progress = min(max(elapsed / duration, 0), 1)
                 if progress >= 1 { return }
 
@@ -143,14 +153,15 @@ struct SonarPingEffect: View {
 
 struct BlackHoleEffect: View {
     let token: UUID
-    @State private var startTime: Date = .now
+    @State private var clock = EffectClock()
     private let duration: Double = WarpEffect.blackHole.duration
     private let particleCount: Int = 56
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: false)) { ctx in
             Canvas { context, size in
-                let elapsed = ctx.date.timeIntervalSince(startTime)
+                let start = clock.start ?? { clock.start = ctx.date; return ctx.date }()
+                let elapsed = ctx.date.timeIntervalSince(start)
                 let progress = min(max(elapsed / duration, 0), 1)
                 if progress >= 1 { return }
 
@@ -226,7 +237,7 @@ struct BlackHoleEffect: View {
 
 struct ComicPopEffect: View {
     let token: UUID
-    @State private var startTime: Date = .now
+    @State private var clock = EffectClock()
     @State private var word: String = ComicPopEffect.popWords.randomElement() ?? "POP!"
     private let duration: Double = WarpEffect.comicPop.duration
 
@@ -238,7 +249,8 @@ struct ComicPopEffect: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: false)) { ctx in
-            let elapsed = ctx.date.timeIntervalSince(startTime)
+            let start = clock.start ?? { clock.start = ctx.date; return ctx.date }()
+            let elapsed = ctx.date.timeIntervalSince(start)
             let progress = min(max(elapsed / duration, 0), 1)
 
             ZStack {
@@ -293,13 +305,14 @@ struct ComicPopEffect: View {
 
 struct SpotlightEffect: View {
     let token: UUID
-    @State private var startTime: Date = .now
+    @State private var clock = EffectClock()
     private let duration: Double = WarpEffect.spotlight.duration
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: false)) { ctx in
             Canvas { context, size in
-                let elapsed = ctx.date.timeIntervalSince(startTime)
+                let start = clock.start ?? { clock.start = ctx.date; return ctx.date }()
+                let elapsed = ctx.date.timeIntervalSince(start)
                 let progress = min(max(elapsed / duration, 0), 1)
                 if progress >= 1 { return }
 
