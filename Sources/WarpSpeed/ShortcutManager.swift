@@ -46,35 +46,54 @@ final class ShortcutManager {
         self.displayManager = displayManager
         self.warper = warper
 
+        // Register every handler exactly ONCE. `KeyboardShortcuts.onKeyDown`
+        // *appends* to an internal handler array — calling it repeatedly (e.g.
+        // on every display re-handshake after sleep) accumulates duplicate
+        // handlers, so a single keypress eventually fires `warp()` many times,
+        // each tearing down the prior overlay animation before it can render.
+        // That was the sleep-degradation bug. Activation by display count is
+        // handled separately via enable/disable, which only touch hotkey
+        // registration — never the handler closures.
+        registerHandlers()
+
         displayManager.$displays
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] in self?.rebind(for: $0.count) }
+            .sink { [weak self] in self?.updateActivation(for: $0.count) }
             .store(in: &cancellables)
     }
 
-    private func rebind(for displayCount: Int) {
-        // Tear down all numeric shortcut handlers, then re-register only the active ones.
-        for name in KeyboardShortcuts.Name.allWarpToDisplay {
-            KeyboardShortcuts.disable(name)
-        }
-
-        for n in 1...max(displayCount, 1) {
+    private func registerHandlers() {
+        for n in 1...maxDisplays {
             let name = KeyboardShortcuts.Name.warpToDisplay(n)
             KeyboardShortcuts.onKeyDown(for: name) { [weak self] in
+                // No-ops safely if display `n` doesn't currently exist.
                 self?.warper.warp(toDisplayNumber: n)
+            }
+        }
+        KeyboardShortcuts.onKeyDown(for: .cycleLeft) { [weak self] in
+            self?.warper.cycle(direction: .left)
+        }
+        KeyboardShortcuts.onKeyDown(for: .cycleRight) { [weak self] in
+            self?.warper.cycle(direction: .right)
+        }
+    }
+
+    private func updateActivation(for displayCount: Int) {
+        for n in 1...maxDisplays {
+            let name = KeyboardShortcuts.Name.warpToDisplay(n)
+            if n <= displayCount {
+                KeyboardShortcuts.enable(name)
+            } else {
+                KeyboardShortcuts.disable(name)
             }
         }
 
         if displayCount > 1 {
-            KeyboardShortcuts.onKeyDown(for: .cycleLeft) { [weak self] in
-                self?.warper.cycle(direction: .left)
-            }
-            KeyboardShortcuts.onKeyDown(for: .cycleRight) { [weak self] in
-                self?.warper.cycle(direction: .right)
-            }
+            KeyboardShortcuts.enable(.cycleLeft, .cycleRight)
         } else {
-            KeyboardShortcuts.disable(.cycleLeft)
-            KeyboardShortcuts.disable(.cycleRight)
+            KeyboardShortcuts.disable(.cycleLeft, .cycleRight)
         }
     }
+
+    private let maxDisplays = 9
 }
