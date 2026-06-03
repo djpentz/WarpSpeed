@@ -48,11 +48,32 @@ if [[ -f "Resources/AppIcon.icns" ]]; then
     cp "Resources/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 fi
 
-echo "[3/4] Ad-hoc code signing..."
-codesign --force --deep --sign - \
-    --options runtime \
-    --entitlements "Resources/WarpSpeed.entitlements" \
-    "$APP_BUNDLE"
+# Prefer a stable self-signed identity so macOS keeps TCC grants (Accessibility)
+# across rebuilds. Ad-hoc signatures get a fresh hash every build, which makes
+# macOS treat each build as a new app and drop the Accessibility permission.
+# Falls back to ad-hoc on machines without the cert (CI, personal laptop).
+# Create the identity locally with: scripts/setup-signing.sh
+SIGN_IDENTITY="WarpSpeed Self-Signed"
+SIGN_KEYCHAIN="$HOME/Library/Keychains/warpspeed-signing.keychain-db"
+
+# Unlock the signing keychain if its password is supplied (optional).
+if [[ -n "${WARPSPEED_KEYCHAIN_PW:-}" && -f "$SIGN_KEYCHAIN" ]]; then
+    security unlock-keychain -p "$WARPSPEED_KEYCHAIN_PW" "$SIGN_KEYCHAIN" 2>/dev/null || true
+fi
+
+if [[ -f "$SIGN_KEYCHAIN" ]] && security find-identity -p codesigning "$SIGN_KEYCHAIN" 2>/dev/null | grep -q "$SIGN_IDENTITY"; then
+    echo "[3/4] Code signing with stable identity '$SIGN_IDENTITY'..."
+    codesign --force --deep --sign "$SIGN_IDENTITY" --keychain "$SIGN_KEYCHAIN" \
+        --options runtime \
+        --entitlements "Resources/WarpSpeed.entitlements" \
+        "$APP_BUNDLE"
+else
+    echo "[3/4] Ad-hoc code signing (stable identity not found; Accessibility grant will reset each build)..."
+    codesign --force --deep --sign - \
+        --options runtime \
+        --entitlements "Resources/WarpSpeed.entitlements" \
+        "$APP_BUNDLE"
+fi
 
 echo "[4/4] Done."
 echo

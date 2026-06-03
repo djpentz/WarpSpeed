@@ -16,6 +16,7 @@ struct WarpSpeedApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let displayManager = DisplayManager()
     private(set) var warper: Warper!
+    private var windowCycler: WindowCycler!
     private var shortcutManager: ShortcutManager!
     private var statusItemController: StatusItemController!
 
@@ -28,7 +29,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         warper = Warper(displayManager: displayManager)
-        shortcutManager = ShortcutManager(displayManager: displayManager, warper: warper)
+        windowCycler = WindowCycler()
+        shortcutManager = ShortcutManager(displayManager: displayManager, warper: warper, windowCycler: windowCycler)
         statusItemController = StatusItemController(displayManager: displayManager, warper: warper)
         SettingsWindowController.shared.configure(displayManager: displayManager, warper: warper)
 

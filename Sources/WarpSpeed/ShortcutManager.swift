@@ -12,6 +12,15 @@ extension KeyboardShortcuts.Name {
         default: .init(.rightArrow, modifiers: [.control, .option])
     )
 
+    static let windowNext = KeyboardShortcuts.Name(
+        "warpspeed.windowNext",
+        default: .init(.rightBracket, modifiers: [.control, .option])
+    )
+    static let windowPrevious = KeyboardShortcuts.Name(
+        "warpspeed.windowPrevious",
+        default: .init(.leftBracket, modifiers: [.control, .option])
+    )
+
     static func warpToDisplay(_ number: Int) -> KeyboardShortcuts.Name {
         let key: KeyboardShortcuts.Key? = {
             switch number {
@@ -40,11 +49,13 @@ extension KeyboardShortcuts.Name {
 final class ShortcutManager {
     private let displayManager: DisplayManager
     private let warper: Warper
+    private let windowCycler: WindowCycler
     private var cancellables = Set<AnyCancellable>()
 
-    init(displayManager: DisplayManager, warper: Warper) {
+    init(displayManager: DisplayManager, warper: Warper, windowCycler: WindowCycler) {
         self.displayManager = displayManager
         self.warper = warper
+        self.windowCycler = windowCycler
 
         // Register every handler exactly ONCE. `KeyboardShortcuts.onKeyDown`
         // *appends* to an internal handler array — calling it repeatedly (e.g.
@@ -75,6 +86,14 @@ final class ShortcutManager {
         }
         KeyboardShortcuts.onKeyDown(for: .cycleRight) { [weak self] in
             self?.warper.cycle(direction: .right)
+        }
+        // Window focus cycling. Gating on Accessibility happens inside cycle();
+        // the first press without permission triggers the prompt + Settings pane.
+        KeyboardShortcuts.onKeyDown(for: .windowNext) { [weak self] in
+            self?.windowCycler.cycle(.next)
+        }
+        KeyboardShortcuts.onKeyDown(for: .windowPrevious) { [weak self] in
+            self?.windowCycler.cycle(.previous)
         }
     }
 

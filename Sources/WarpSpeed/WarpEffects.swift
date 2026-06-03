@@ -255,10 +255,22 @@ struct ComicPopEffect: View {
 
             ZStack {
                 if progress < 1 {
-                    let popEased = 1 - pow(1 - min(progress * 2.2, 1), 3)
-                    let scale    = 0.35 + 0.75 * popEased
+                    // Pop-in over the first 30% (scale up to full), then a
+                    // symmetric "un-pop" exit from 55%: the word shrinks back
+                    // down and vanishes — the reverse of the entrance. Shrinking
+                    // (rather than fading at full size) is what keeps the tail
+                    // clean: a low-opacity word held at full size left its big
+                    // black outline dominating as a dark mass, which read as
+                    // "darkening to black"; shrinking takes that mass away with it.
+                    let inT      = min(progress / 0.30, 1)
+                    let popEased = 1 - pow(1 - inT, 3)
+                    let baseScale = 0.35 + 0.75 * popEased
+                    let exitT    = progress <= 0.55 ? 0 : (progress - 0.55) / 0.45
+                    let exitEased = exitT * exitT * exitT
+                    let scale    = baseScale * (1 - 0.92 * exitEased)        // shrink toward nothing
                     let wiggle   = sin(progress * 14) * 4
-                    let alpha: Double = progress < 0.65 ? 1.0 : max(0, 1 - (progress - 0.65) / 0.35)
+                    let alpha    = max(0, 1 - max(0, (exitT - 0.55) / 0.45)) // small remnant fades at the very end
+                    let burstAlpha = max(0, 1 - min(exitT * 1.5, 1))         // starburst clears earliest
 
                     // Yellow starburst behind the text, drawn with a comic-book ink outline.
                     Canvas { context, size in
@@ -280,8 +292,8 @@ struct ComicPopEffect: View {
                             path.addLine(to: p2)
                         }
                         path.closeSubpath()
-                        context.fill(path, with: .color(Color(red: 1.0, green: 0.86, blue: 0.15).opacity(alpha)))
-                        context.stroke(path, with: .color(.black.opacity(alpha)), lineWidth: 4.0)
+                        context.fill(path, with: .color(Color(red: 1.0, green: 0.86, blue: 0.15).opacity(burstAlpha)))
+                        context.stroke(path, with: .color(.black.opacity(burstAlpha)), lineWidth: 4.0)
                     }
 
                     Text(word)

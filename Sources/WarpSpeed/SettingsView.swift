@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import Combine
 import KeyboardShortcuts
 
 struct SettingsView: View {
@@ -7,6 +8,12 @@ struct SettingsView: View {
     @EnvironmentObject private var warper: Warper
     @State private var launchAtLogin: Bool = LaunchAtLoginManager.isEnabled
     @State private var selectedEffect: WarpEffect = WarpSettings.currentEffect
+    @State private var accessibilityTrusted: Bool = WindowCycler.isTrusted
+    @State private var visibleWindowsOnly: Bool = WarpSettings.cycleVisibleWindowsOnly
+
+    // Accessibility can be granted/revoked in System Settings while this window
+    // is open; poll so the status row reflects it live.
+    private let trustTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         Form {
@@ -47,6 +54,40 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+            }
+
+            Section {
+                KeyboardShortcuts.Recorder("Focus next window", name: .windowNext)
+                KeyboardShortcuts.Recorder("Focus previous window", name: .windowPrevious)
+
+                Toggle("Only cycle visible windows", isOn: $visibleWindowsOnly)
+                    .onChange(of: visibleWindowsOnly) { _, newValue in
+                        WarpSettings.cycleVisibleWindowsOnly = newValue
+                    }
+
+                HStack(spacing: 8) {
+                    Image(systemName: accessibilityTrusted ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
+                        .foregroundStyle(accessibilityTrusted ? .green : .orange)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(accessibilityTrusted ? "Accessibility access granted" : "Accessibility access needed")
+                            .font(.callout)
+                        if !accessibilityTrusted {
+                            Text("Required to move focus between windows.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Spacer()
+                    if !accessibilityTrusted {
+                        Button("Grant…") { WindowCycler.requestAccessibility() }
+                    }
+                }
+            } header: {
+                Text("Cycle windows")
+            } footer: {
+                Text("Steps focus through windows left-to-right across your displays, wrapping around, with the cursor following. \"Only cycle visible windows\" skips any window hidden behind another.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section {
@@ -97,6 +138,9 @@ struct SettingsView: View {
         .onChange(of: selectedEffect) { _, newValue in
             WarpSettings.currentEffect = newValue
             previewSelection(newValue)
+        }
+        .onReceive(trustTimer) { _ in
+            accessibilityTrusted = WindowCycler.isTrusted
         }
     }
 

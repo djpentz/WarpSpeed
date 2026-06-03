@@ -53,6 +53,17 @@ enum WarpEffect: String, CaseIterable, Identifiable {
 
 enum WarpSettings {
     private static let effectKey = "warpspeed.effect"
+    private static let visibleOnlyKey = "warpspeed.cycleVisibleWindowsOnly"
+
+    /// When true (default), window cycling skips windows hidden behind others.
+    static var cycleVisibleWindowsOnly: Bool {
+        get {
+            UserDefaults.standard.object(forKey: visibleOnlyKey) as? Bool ?? true
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: visibleOnlyKey)
+        }
+    }
 
     static var currentEffect: WarpEffect {
         get {
