@@ -4,7 +4,7 @@ macOS menu-bar utility: warp the cursor between displays via global hotkeys (wit
 
 ## 🔑 Read first: `.claude/HANDOFF.md`
 
-**At the start of every session, read `.claude/HANDOFF.md` before doing any work.** It has the current release state, the cross-machine patch workflow, build/run steps, architecture, and the hard-won gotchas. The essentials, so they're never missed:
+**If `.claude/HANDOFF.md` exists, read it before doing any work.** It's only present when a previous session left a handoff — when it is, it has the current release state, the cross-machine patch workflow, build/run steps, architecture, and the hard-won gotchas. The essentials below apply either way, so they're never missed:
 
 - **Release state:** **v0.1.4** is merged to `origin/main` and tagged. No patches pending.
 - **Cross-machine:** personal laptop (`djpentz` / `djpentz@gmail.com`) is canonical origin; the work laptop contributes via `git format-patch` → `git am`. Use a repo-local personal git identity on the work laptop; don't push the personal repo from there.
