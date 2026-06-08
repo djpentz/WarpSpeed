@@ -12,10 +12,12 @@ final class SettingsWindowController {
     private var window: NSWindow?
     private var displayManager: DisplayManager?
     private var warper: Warper?
+    private var laserController: LaserController?
 
-    func configure(displayManager: DisplayManager, warper: Warper) {
+    func configure(displayManager: DisplayManager, warper: Warper, laserController: LaserController) {
         self.displayManager = displayManager
         self.warper = warper
+        self.laserController = laserController
     }
 
     func show() {
@@ -27,11 +29,12 @@ final class SettingsWindowController {
             return
         }
 
-        guard let displayManager, let warper else { return }
+        guard let displayManager, let warper, let laserController else { return }
 
         let root = SettingsView()
             .environmentObject(displayManager)
             .environmentObject(warper)
+            .environmentObject(laserController)
         let hosting = NSHostingController(rootView: root)
 
         let w = NSWindow(contentViewController: hosting)

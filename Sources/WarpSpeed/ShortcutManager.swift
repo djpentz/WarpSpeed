@@ -21,6 +21,11 @@ extension KeyboardShortcuts.Name {
         default: .init(.leftBracket, modifiers: [.control, .option])
     )
 
+    static let laserToggle = KeyboardShortcuts.Name(
+        "warpspeed.laserToggle",
+        default: .init(.l, modifiers: [.control, .option])
+    )
+
     static func warpToDisplay(_ number: Int) -> KeyboardShortcuts.Name {
         let key: KeyboardShortcuts.Key? = {
             switch number {
@@ -50,12 +55,14 @@ final class ShortcutManager {
     private let displayManager: DisplayManager
     private let warper: Warper
     private let windowCycler: WindowCycler
+    private let laserController: LaserController
     private var cancellables = Set<AnyCancellable>()
 
-    init(displayManager: DisplayManager, warper: Warper, windowCycler: WindowCycler) {
+    init(displayManager: DisplayManager, warper: Warper, windowCycler: WindowCycler, laserController: LaserController) {
         self.displayManager = displayManager
         self.warper = warper
         self.windowCycler = windowCycler
+        self.laserController = laserController
 
         // Register every handler exactly ONCE. `KeyboardShortcuts.onKeyDown`
         // *appends* to an internal handler array — calling it repeatedly (e.g.
@@ -94,6 +101,11 @@ final class ShortcutManager {
         }
         KeyboardShortcuts.onKeyDown(for: .windowPrevious) { [weak self] in
             self?.windowCycler.cycle(.previous)
+        }
+        // Laser pointer is display-count-independent, so it's always enabled and
+        // never touched by updateActivation's enable/disable churn.
+        KeyboardShortcuts.onKeyDown(for: .laserToggle) { [weak self] in
+            self?.laserController.toggle()
         }
     }
 

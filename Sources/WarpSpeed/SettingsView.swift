@@ -6,6 +6,7 @@ import KeyboardShortcuts
 struct SettingsView: View {
     @EnvironmentObject private var displayManager: DisplayManager
     @EnvironmentObject private var warper: Warper
+    @EnvironmentObject private var laser: LaserController
     @State private var launchAtLogin: Bool = LaunchAtLoginManager.isEnabled
     @State private var selectedEffect: WarpEffect = WarpSettings.currentEffect
     @State private var accessibilityTrusted: Bool = WindowCycler.isTrusted
@@ -86,6 +87,56 @@ struct SettingsView: View {
                 Text("Cycle windows")
             } footer: {
                 Text("Steps focus through windows left-to-right across your displays, wrapping around, with the cursor following. \"Only cycle visible windows\" skips any window hidden behind another.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                KeyboardShortcuts.Recorder("Toggle laser pointer", name: .laserToggle)
+
+                Toggle("Laser pointer on", isOn: Binding(
+                    get: { laser.isActive },
+                    set: { laser.setActive($0) }
+                ))
+
+                ColorPicker("Colour", selection: Binding(
+                    get: { laser.config.color },
+                    set: { laser.config.setColor($0) }
+                ), supportsOpacity: false)
+
+                HStack {
+                    Text("Dot size")
+                    Slider(value: $laser.config.dotSize, in: 10...44)
+                    Text("\(Int(laser.config.dotSize))")
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                        .frame(width: 24, alignment: .trailing)
+                }
+
+                Toggle("Motion trail", isOn: $laser.config.trailEnabled)
+
+                if laser.config.trailEnabled {
+                    HStack {
+                        Text("Trail length")
+                        Slider(value: $laser.config.trailDuration, in: 0.1...1.0)
+                        Text(String(format: "%.2fs", laser.config.trailDuration))
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                            .frame(width: 44, alignment: .trailing)
+                    }
+                    HStack {
+                        Text("Trail thickness")
+                        Slider(value: $laser.config.trailThickness, in: 2...24)
+                        Text("\(Int(laser.config.trailThickness))")
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                            .frame(width: 24, alignment: .trailing)
+                    }
+                }
+            } header: {
+                Text("Laser pointer")
+            } footer: {
+                Text("Turns your cursor into a presenter's laser for screen sharing. It appears in the stream only when you share your **whole screen** — sharing a single window (or a PowerPoint slideshow) captures just that window, not the overlay. Toggle it any time with the hotkey.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

@@ -17,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let displayManager = DisplayManager()
     private(set) var warper: Warper!
     private var windowCycler: WindowCycler!
+    private var laserController: LaserController!
     private var shortcutManager: ShortcutManager!
     private var statusItemController: StatusItemController!
 
@@ -30,9 +31,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         warper = Warper(displayManager: displayManager)
         windowCycler = WindowCycler()
-        shortcutManager = ShortcutManager(displayManager: displayManager, warper: warper, windowCycler: windowCycler)
-        statusItemController = StatusItemController(displayManager: displayManager, warper: warper)
-        SettingsWindowController.shared.configure(displayManager: displayManager, warper: warper)
+        laserController = LaserController(displayManager: displayManager)
+        shortcutManager = ShortcutManager(displayManager: displayManager, warper: warper, windowCycler: windowCycler, laserController: laserController)
+        statusItemController = StatusItemController(displayManager: displayManager, warper: warper, laserController: laserController)
+        SettingsWindowController.shared.configure(displayManager: displayManager, warper: warper, laserController: laserController)
 
         let key = "warpspeed.hasLaunchedBefore"
         if !UserDefaults.standard.bool(forKey: key) {

@@ -6,11 +6,13 @@ final class StatusItemController: NSObject {
     private let statusItem: NSStatusItem
     private let displayManager: DisplayManager
     private let warper: Warper
+    private let laserController: LaserController
     private var cancellables = Set<AnyCancellable>()
 
-    init(displayManager: DisplayManager, warper: Warper) {
+    init(displayManager: DisplayManager, warper: Warper, laserController: LaserController) {
         self.displayManager = displayManager
         self.warper = warper
+        self.laserController = laserController
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
 
@@ -25,6 +27,10 @@ final class StatusItemController: NSObject {
 
         rebuildMenu()
         displayManager.$displays
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.rebuildMenu() }
+            .store(in: &cancellables)
+        laserController.$isActive
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.rebuildMenu() }
             .store(in: &cancellables)
@@ -51,6 +57,16 @@ final class StatusItemController: NSObject {
             item.tag = display.displayNumber
             menu.addItem(item)
         }
+        menu.addItem(.separator())
+
+        let laser = NSMenuItem(
+            title: "Laser Pointer",
+            action: #selector(toggleLaser),
+            keyEquivalent: ""
+        )
+        laser.target = self
+        laser.state = laserController.isActive ? .on : .off
+        menu.addItem(laser)
         menu.addItem(.separator())
 
         let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
@@ -82,6 +98,10 @@ final class StatusItemController: NSObject {
 
     @objc private func warpToDisplay(_ sender: NSMenuItem) {
         warper.warp(toDisplayNumber: sender.tag)
+    }
+
+    @objc private func toggleLaser() {
+        laserController.toggle()
     }
 
     @objc private func openSettings() {
